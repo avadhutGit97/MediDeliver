@@ -2,14 +2,6 @@
 
 This is a small demo app that simulates uploading a prescription image, running OCR/analysis, and letting the user verify extracted prescription data.
 
-What I changed in this copy
-
-- Fixed malformed HTML (head/body) so scripts and inputs attach correctly.
-- Moved drag/drop and file input handler setup into a DOMContentLoaded `initUI()` so handlers attach reliably.
-- Improved the image-content heuristic to sample pixels (faster and less likely to false-negative).
-- Added client-side OCR using Tesseract.js (browser) as a lightweight keyword check to avoid treating non-prescription images as prescriptions.
-- Added an OCR debug panel (`#ocrDebug`) that displays raw OCR text after analysis for easier troubleshooting.
-
 How OCR is used
 
 - First, the image is checked visually for text-like characteristics (contrast + variance + filesize + dimensions).
@@ -17,10 +9,17 @@ How OCR is used
 - The OCR result text is checked for prescription-specific keywords (e.g., "rx", "doctor", "prescription", "mg", "tablet", "capsule", "dose").
 - Only if these keywords are found will the app treat the upload as a prescription and populate the verification form (currently with simulated data).
 
-Notes about testing locally
+
+## Demo Data to Use
+
+- **ZIP codes:** Use one of these demo ZIP codes for service area testing: `10001`, `10002`, `10003`, `90210`, `90211`, `60601`, `60602`, `77001`, `77002`.
+- **Prescription images:** Upload a clear photo or scan of a prescription (typed or printed works best; handwriting may require manual entry). Avoid glare, shadows, and blurry images for best OCR results.
+- **Non-prescription images:** To test rejection, upload a sign or random image; the app should not auto-fill prescription data unless keywords are detected.
+
+## Notes about testing locally
 
 1. Open `index.html` in a modern browser (Chrome, Edge, Firefox). Double-clicking the file should work for client-side testing.
-2. Enter a valid ZIP code (for the demo try `10001`), then upload an image and click "Analyze".
+2. Enter a valid ZIP code from the list above, then upload an image and click "Analyze".
 3. After analysis, go to "Verify" (Step 2). If OCR ran, the raw OCR text will be shown in the "OCR Debug Output" panel below the AI notes.
 
 Limitations and next steps
