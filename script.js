@@ -93,27 +93,69 @@
         }
 
         function handleFiles(file) {
-            if (!file.type.startsWith('image/')) {
-                alert('Please upload an image file');
+            if (!file.type.startsWith('image/') && file.type !== 'application/pdf') {
+                alert('Please upload an image file (JPG, PNG) or PDF');
                 return;
             }
             
             prescriptionData.image = file;
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                prescriptionData.imageDataUrl = e.target.result;
-                document.getElementById('previewImg').src = e.target.result;
-                document.getElementById('uploadPlaceholder').classList.add('hidden');
-                document.getElementById('imagePreview').classList.remove('hidden');
-                document.getElementById('analysisError').classList.add('hidden');
-            };
-            reader.readAsDataURL(file);
+            
+            if (file.type === 'application/pdf') {
+                // Handle PDF file
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    prescriptionData.imageDataUrl = e.target.result;
+                    // For PDF, show a document icon instead of image preview
+                    document.getElementById('previewImg').style.display = 'none';
+                    const pdfIcon = document.createElement('div');
+                    pdfIcon.id = 'pdfPreview';
+                    pdfIcon.className = 'flex flex-col items-center justify-center h-96 bg-gray-100 rounded-lg border-2 border-gray-300';
+                    pdfIcon.innerHTML = `
+                        <i class="fas fa-file-pdf text-6xl text-red-500 mb-4"></i>
+                        <p class="text-lg font-semibold text-gray-700">${file.name}</p>
+                        <p class="text-sm text-gray-500">${(file.size / 1024 / 1024).toFixed(2)} MB</p>
+                    `;
+                    
+                    const previewContainer = document.getElementById('imagePreview');
+                    // Remove existing PDF preview if any
+                    const existingPdf = document.getElementById('pdfPreview');
+                    if (existingPdf) existingPdf.remove();
+                    
+                    previewContainer.insertBefore(pdfIcon, previewContainer.firstChild);
+                    document.getElementById('uploadPlaceholder').classList.add('hidden');
+                    document.getElementById('imagePreview').classList.remove('hidden');
+                    document.getElementById('analysisError').classList.add('hidden');
+                };
+                reader.readAsDataURL(file);
+            } else {
+                // Handle image file (existing logic)
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    prescriptionData.imageDataUrl = e.target.result;
+                    document.getElementById('previewImg').src = e.target.result;
+                    document.getElementById('previewImg').style.display = 'block';
+                    // Remove PDF preview if switching from PDF to image
+                    const existingPdf = document.getElementById('pdfPreview');
+                    if (existingPdf) existingPdf.remove();
+                    
+                    document.getElementById('uploadPlaceholder').classList.add('hidden');
+                    document.getElementById('imagePreview').classList.remove('hidden');
+                    document.getElementById('analysisError').classList.add('hidden');
+                };
+                reader.readAsDataURL(file);
+            }
         }
 
         function retakePhoto() {
             document.getElementById('prescriptionInput').value = '';
             document.getElementById('uploadPlaceholder').classList.remove('hidden');
             document.getElementById('imagePreview').classList.add('hidden');
+            
+            // Clean up both image and PDF previews
+            document.getElementById('previewImg').style.display = 'block';
+            const existingPdf = document.getElementById('pdfPreview');
+            if (existingPdf) existingPdf.remove();
+            
             prescriptionData.image = null;
             prescriptionData.imageDataUrl = null;
             prescriptionData.analysisSuccess = false;
@@ -378,8 +420,8 @@
                     date: new Date().toISOString().split('T')[0],
                     rxNumber: 'RX' + Math.floor(100000000 + Math.random() * 900000000),
                     medicines: [
-                        { name: 'Amoxicillin 500mg', qty: '30', dosage: '1 capsule 3x daily', confidence: 'high', price: '24.99' },
-                        { name: 'Ibuprofen 200mg', qty: '60', dosage: 'As needed for pain', confidence: 'medium', price: '12.50' }
+                        { name: 'Amoxicillin', strength: '500mg', qty: '30', dosage: 'Take 1 capsule 3 times daily with food', confidence: 'high', price: '24.99' },
+                        { name: 'Ibuprofen', strength: '200mg', qty: '60', dosage: 'Take 1-2 tablets as needed for pain, max 6 per day', confidence: 'medium', price: '12.50' }
                     ],
                     confidence: 87
                 },
@@ -389,11 +431,22 @@
                     date: new Date(Date.now() - 86400000).toISOString().split('T')[0],
                     rxNumber: 'RX' + Math.floor(100000000 + Math.random() * 900000000),
                     medicines: [
-                        { name: 'Lisinopril 10mg', qty: '90', dosage: '1 tablet daily', confidence: 'high', price: '45.00' },
-                        { name: 'Metformin 500mg', qty: '60', dosage: '1 tablet 2x daily with meals', confidence: 'high', price: '32.75' },
-                        { name: 'Atorvastatin 20mg', qty: '30', dosage: '1 tablet at bedtime', confidence: 'medium', price: '28.99' }
+                        { name: 'Lisinopril', strength: '10mg', qty: '90', dosage: 'Take 1 tablet daily in morning', confidence: 'high', price: '45.00' },
+                        { name: 'Metformin', strength: '500mg', qty: '60', dosage: 'Take 1 tablet twice daily with meals', confidence: 'high', price: '32.75' },
+                        { name: 'Atorvastatin', strength: '20mg', qty: '30', dosage: 'Take 1 tablet at bedtime', confidence: 'medium', price: '28.99' }
                     ],
                     confidence: 92
+                },
+                {
+                    doctorName: 'Dr. Sarah Johnson, MD',
+                    licenseNumber: 'MD78432',
+                    date: '2026-03-10',
+                    rxNumber: 'RX123456789',
+                    medicines: [
+                        { name: 'Amoxicillin', strength: '500mg', qty: '30', dosage: 'Take 1 capsule 3 times daily with food', confidence: 'high', price: '24.99' },
+                        { name: 'Ibuprofen', strength: '200mg', qty: '60', dosage: 'Take 1-2 tablets as needed for pain, max 6 per day', confidence: 'high', price: '12.50' }
+                    ],
+                    confidence: 95
                 }
             ];
             
@@ -443,28 +496,46 @@
 
             // Detect medicines: look for lines containing mg, tablet, capsule, tab, cap
             for (const line of lines) {
-                if (/\b(mg|mcg|tablet|capsule|tab|cap|ml)\b/i.test(line)) {
-                    // Try to extract name and dosage
-                    const medMatch = line.match(/^(.*?)(\b\d+\s?(mg|mcg|g|ml)\b.*)$/i);
-                    let name = line;
-                    let dosage = '';
-                    if (medMatch) {
-                        name = medMatch[1].trim();
-                        dosage = medMatch[2].trim();
+                if (/\b(mg|mcg|tablet|tablets|capsule|capsules|tab|tabs|cap|caps|ml)\b/i.test(line)) {
+                    let name = '';
+                    let strength = '';
+                    let instructions = '';
+                    let qty = '';
+
+                    // Extract medicine name and strength (e.g., "ibuprofen 200mg take 1-2 tablets")
+                    const strengthMatch = line.match(/^(.+?)\s+(\d+\.?\d*\s?(?:mg|mcg|g|ml|units?|iu|%))\b(.*)$/i);
+                    if (strengthMatch) {
+                        name = strengthMatch[1].trim();
+                        strength = strengthMatch[2].trim();
+                        instructions = strengthMatch[3].trim();
                     } else {
-                        // fallback: split at common separators
-                        const parts = line.split(/\-|\u2022|•|:/);
-                        name = parts[0].trim();
+                        // Fallback: try to extract just name before any dosage/instruction words
+                        const beforeInstructions = line.match(/^(.+?)\s+(?:take|tablet|capsule|cap|tab|daily|twice|once|every|as|with)/i);
+                        if (beforeInstructions) {
+                            name = beforeInstructions[1].trim();
+                            instructions = line.replace(name, '').trim();
+                        } else {
+                            // Last fallback: split at common separators
+                            const parts = line.split(/\-|\u2022|•|:/);
+                            name = parts[0].trim();
+                            instructions = parts.slice(1).join(' ').trim();
+                        }
                     }
 
                     // attempt to find quantity (e.g., Disp #30 or #30)
-                    let qty = '';
                     let qtyMatch = line.match(/disp\b[^\d]*(\d+)/i);
                     if (!qtyMatch) qtyMatch = line.match(/#(\d+)/);
                     if (!qtyMatch) qtyMatch = line.match(/qty[:\s]*(\d+)/i);
                     if (qtyMatch) qty = qtyMatch[1] || '';
 
-                    medicines.push({ name: name || 'Unknown', qty: qty || '1', dosage: dosage || '', confidence: 'medium', price: (Math.random() * 50 + 10).toFixed(2) });
+                    medicines.push({ 
+                        name: name || 'Unknown', 
+                        strength: strength || '', 
+                        qty: qty || '1', 
+                        dosage: instructions || '', 
+                        confidence: 'medium', 
+                        price: (Math.random() * 50 + 10).toFixed(2) 
+                    });
                     medicineSuggestions.push(line);
                 }
             }
@@ -814,9 +885,13 @@
             
             // Clear and populate medicines
             document.getElementById('medicinesList').innerHTML = '';
+            console.log('populateVerificationForm - medicines data:', data.medicines);
+            
             if (data.medicines && data.medicines.length > 0) {
-                data.medicines.forEach(med => {
-                    addMedicineToList(med.name, med.qty, med.dosage, med.confidence, med.price);
+                console.log('Processing', data.medicines.length, 'medicines');
+                data.medicines.forEach((med, index) => {
+                    console.log(`Processing medicine ${index + 1}:`, med);
+                    addMedicineToList(med.name, med.strength || '', med.qty, med.dosage, med.confidence, med.price);
                 });
                 document.getElementById('detectedCount').textContent = data.medicines.length + ' detected';
                 document.getElementById('emptyMedicines').classList.add('hidden');
@@ -843,23 +918,48 @@
             }
         }
 
-        function addMedicineToList(name, qty, dosage, confidence = 'low', price = null) {
+        function addMedicineToList(name, strength, qty, dosage, confidence = 'low', price = null) {
+            console.log('addMedicineToList called with:', { name, strength, qty, dosage, confidence, price });
+            
             const template = document.getElementById('medicineTemplate').content.cloneNode(true);
             const item = template.querySelector('.medicine-item');
             
-            template.querySelector('.medicine-name').value = name;
+            // Split name and strength if they're combined in the name parameter
+            let medicineName = name;
+            let medicineStrength = strength || '';
+            
+            if (!strength && name) {
+                // Try to extract strength from name (e.g., "Amoxicillin 500mg" -> name: "Amoxicillin", strength: "500mg")
+                const strengthMatch = name.match(/^(.+?)\s+(\d+\.?\d*\s?(?:mg|mcg|g|ml|units?|iu|%))$/i);
+                if (strengthMatch) {
+                    medicineName = strengthMatch[1].trim();
+                    medicineStrength = strengthMatch[2].trim();
+                    console.log('Extracted strength from name:', { medicineName, medicineStrength });
+                }
+            }
+            
+            template.querySelector('.medicine-name').value = medicineName;
+            template.querySelector('.medicine-strength').value = medicineStrength;
             template.querySelector('.medicine-qty').value = qty;
             template.querySelector('.medicine-dosage').value = dosage;
+            
+            console.log('Setting values:', { 
+                name: medicineName, 
+                strength: medicineStrength, 
+                qty, 
+                dosage 
+            });
             
             if (price) {
                 item.dataset.price = price;
             }
             
             document.getElementById('medicinesList').appendChild(template);
+            console.log('Medicine item added to list');
         }
 
         function addMedicine() {
-            addMedicineToList('', '', '', 'low', (Math.random() * 50 + 10).toFixed(2));
+            addMedicineToList('', '', '', '', 'low', (Math.random() * 50 + 10).toFixed(2));
             document.getElementById('emptyMedicines').classList.add('hidden');
             const count = document.querySelectorAll('.medicine-item').length;
             document.getElementById('detectedCount').textContent = count + ' items';
@@ -878,6 +978,7 @@
             const medicines = [];
             document.querySelectorAll('.medicine-item').forEach(item => {
                 const name = item.querySelector('.medicine-name').value;
+                const strength = item.querySelector('.medicine-strength').value;
                 const qty = item.querySelector('.medicine-qty').value;
                 const dosage = item.querySelector('.medicine-dosage').value;
                 const price = item.dataset.price || (Math.random() * 50 + 10).toFixed(2);
@@ -887,7 +988,9 @@
                     return;
                 }
 
-                medicines.push({ name, qty, dosage, price });
+                // Combine name and strength for display
+                const displayName = strength ? `${name} ${strength}` : name;
+                medicines.push({ name: displayName, qty, dosage, price });
             });
 
             if (medicines.length === 0) {
