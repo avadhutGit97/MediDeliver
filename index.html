@@ -70,6 +70,22 @@
             <h2 class="text-3xl font-bold text-gray-800 mb-2">Upload Your Prescription</h2>
             <p class="text-gray-600 mb-6">Take a clear photo or upload your prescription. Our AI will analyze and extract the details.</p>
 
+            <!-- Instructions -->
+            <div class="bg-amber-50 border-l-4 border-amber-500 p-4 mb-6 rounded-r-lg">
+                <div class="flex items-start">
+                    <i class="fas fa-lightbulb text-amber-500 mr-3 mt-1"></i>
+                    <div>
+                        <h4 class="font-semibold text-amber-800 mb-2">For Best Results:</h4>
+                        <ul class="text-sm text-amber-700 space-y-1">
+                            <li>• Ensure good lighting and avoid shadows or glare</li>
+                            <li>• Include doctor's name, license number, and prescription date</li>
+                            <li>• Make sure medicine names, strengths, and quantities are clearly visible</li>
+                            <li>• Capture the entire prescription in the frame</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
             <!-- Service Area Check -->
             <div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6 rounded-r-lg">
                 <div class="flex items-center mb-2">
@@ -88,7 +104,7 @@
 
             <!-- Upload Area -->
             <div id="uploadArea" class="border-3 border-dashed border-gray-300 rounded-2xl p-12 text-center cursor-pointer transition-all hover:border-purple-500 bg-gray-50 relative overflow-hidden">
-                <input type="file" id="prescriptionInput" accept="image/*" capture="environment" class="hidden" onchange="handleFileSelect(event)">
+                <input type="file" id="prescriptionInput" accept="image/*,application/pdf" capture="environment" class="hidden" onchange="handleFileSelect(event)">
                 
                 <div id="uploadPlaceholder" class="pointer-events-none">
                     <div class="w-24 h-24 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -160,6 +176,22 @@
                 <button onclick="backToStep(1)" class="text-gray-500 hover:text-gray-700">
                     <i class="fas fa-arrow-left mr-1"></i>Back
                 </button>
+            </div>
+
+            <!-- Verification Instructions -->
+            <div class="bg-green-50 border-l-4 border-green-500 p-4 mb-6 rounded-r-lg">
+                <div class="flex items-start">
+                    <i class="fas fa-info-circle text-green-500 mr-3 mt-1"></i>
+                    <div>
+                        <h4 class="font-semibold text-green-800 mb-2">Please Verify All Information:</h4>
+                        <ul class="text-sm text-green-700 space-y-1">
+                            <li>• Check that doctor's name and license number are correct</li>
+                            <li>• Verify prescription date matches your document</li>
+                            <li>• Confirm medicine names, strengths, and quantities</li>
+                            <li>• Review dosage instructions carefully</li>
+                        </ul>
+                    </div>
+                </div>
             </div>
 
             <!-- Original Image Reference -->
@@ -503,25 +535,37 @@
 
     <!-- Medicine Template (Hidden) -->
     <template id="medicineTemplate">
-        <div class="medicine-item bg-gray-50 rounded-lg p-4 border border-gray-200 flex gap-4 items-start relative group">
-            <div class="w-16 h-16 bg-white rounded-lg flex items-center justify-center flex-shrink-0 border border-gray-200">
-                <i class="fas fa-pills text-2xl text-purple-400"></i>
+        <div class="medicine-item bg-gray-50 rounded-lg p-4 border border-gray-200 relative group">
+            <div class="flex items-start gap-4">
+                <div class="w-12 h-12 bg-white rounded-lg flex items-center justify-center flex-shrink-0 border border-gray-200">
+                    <i class="fas fa-pills text-lg text-purple-400"></i>
+                </div>
+                <div class="flex-1">
+                    <div class="grid grid-cols-1 md:grid-cols-5 gap-3 mb-3">
+                        <div class="md:col-span-2">
+                            <label class="block text-xs font-medium text-gray-500 mb-1">Medicine Name</label>
+                            <input type="text" class="medicine-name w-full px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-purple-500 outline-none" placeholder="e.g., Amoxicillin">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-500 mb-1">Strength</label>
+                            <input type="text" class="medicine-strength w-full px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-purple-500 outline-none" placeholder="500mg">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-500 mb-1">Quantity</label>
+                            <input type="number" class="medicine-qty w-full px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-purple-500 outline-none" placeholder="30" min="1">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-500 mb-1">Instructions</label>
+                            <input type="text" class="medicine-dosage w-full px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-purple-500 outline-none" placeholder="Take 1 capsule 3 times daily">
+                        </div>
+                    </div>
+                </div>
+                <button onclick="removeMedicine(this)" class="text-red-400 hover:text-red-600 transition absolute top-2 right-2">
+                    <i class="fas fa-trash-alt"></i>
+                </button>
             </div>
-            <div class="flex-1 grid grid-cols-1 md:grid-cols-4 gap-3">
-                <div class="md:col-span-2">
-                    <label class="block text-xs font-medium text-gray-500 mb-1">Medicine Name</label>
-                    <input type="text" class="medicine-name w-full px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-purple-500 outline-none" placeholder="e.g., Amoxicillin 500mg">
-                </div>
-                <div>
-                    <label class="block text-xs font-medium text-gray-500 mb-1">Quantity</label>
-                    <input type="number" class="medicine-qty w-full px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-purple-500 outline-none" placeholder="30" min="1">
-                </div>
-                <div>
-                    <label class="block text-xs font-medium text-gray-500 mb-1">Dosage</label>
-                    <input type="text" class="medicine-dosage w-full px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-purple-500 outline-none" placeholder="1x daily">
-                </div>
-            </div>
-            <button onclick="removeMedicine(this)" class="text-red-400 hover:text-red-600 transition mt-6">
+        </div>
+    </template>
                 <i class="fas fa-trash-alt"></i>
             </button>
         </div>
