@@ -550,28 +550,8 @@
 
             // Suggest fallback snippets when fields are missing
             if (!doctorName) {
-                // prefer lines containing 'dr' or something that looks like a name
-                const drLine = lines.find(l => /\bdr\.?\b/i.test(l) || /doctor[:\s]/i.test(l));
-                if (drLine) doctorSuggestion = drLine;
-                else {
-                    // fallback to first non-empty line
-                    doctorSuggestion = lines[0] || null;
-                }
-            }
-
-            // Also look for UI-style labels like 'Provider' or 'Prescriber' followed by the name
-            if (!doctorName && !doctorSuggestion) {
-                const providerIdx = lines.findIndex(l => /\b(provider|prescriber|prescribed by)\b/i.test(l));
-                if (providerIdx >= 0) {
-                    // If the same line contains the name after the label, use it; otherwise check the next line
-                    const provLine = lines[providerIdx];
-                    const after = provLine.replace(/^(provider|prescriber|prescribed by)[:\s-]*/i, '').trim();
-                    if (after && after.length > 2 && !/^(provider|date|drug|overview)$/i.test(after.split(' ')[0])) {
-                        doctorSuggestion = after;
-                    } else if (lines[providerIdx + 1]) {
-                        doctorSuggestion = lines[providerIdx + 1];
-                    }
-                }
+                // Don't create suggestions for doctor name - just mark as not found
+                doctorSuggestion = null;
             }
 
             if (!rxNumber) {
@@ -809,8 +789,8 @@
                 doctorExtractedEl.innerHTML = 'Detected: <span class="extracted-text">' + data.doctorName + '</span>';
                 doctorExtractedEl.classList.remove('no-data', 'text-red-500');
             } else {
-                const s = data.doctorSuggestion || (data.rawText && data.rawText.split(/\r?\n/)[0]) || 'No suggestion';
-                doctorExtractedEl.innerHTML = 'OCR suggestion: <span class="extracted-text">' + s + '</span> <button onclick="acceptSuggestion(\'doctorName\')" class="ocr-suggestion-btn ml-2">Accept</button>';
+                doctorExtractedEl.innerHTML = 'No doctor name found - enter manually';
+                doctorExtractedEl.classList.add('no-data');
                 doctorExtractedEl.classList.remove('text-red-500');
             }
 
@@ -845,27 +825,14 @@
                 rxExtractedEl.innerHTML = s ? 'OCR suggestion: <span class="extracted-text">' + s + '</span> <button onclick="acceptSuggestion(\'rxNumber\')" class="ocr-suggestion-btn ml-2">Accept</button>' : 'No data extracted - enter manually';
                 rxExtractedEl.classList.add('no-data');
             }
-            // Auto-fill heuristics: try to automatically populate doctor and date when suggestions look valid
+            // Auto-fill heuristics: try to automatically populate date when suggestions look valid
             if (prescriptionData.autoFill) {
                 try {
                     // helper to clean suggestion text
                     const clean = (v) => String(v || '').replace(/^(provider|prescriber|prescribed by|doctor|dr|date|ocr suggestion:|detected:|\#)[:\s-]*/i, '').trim();
 
-                    // Auto-fill doctor if parsed or suggestion looks like a name (contains Dr or two capitalized words)
-                    if (!document.getElementById('doctorName').value) {
-                        const docVal = data.doctorName || data.doctorSuggestion;
-                        const cleanedDoc = clean(docVal);
-                        if (cleanedDoc) {
-                            const looksLikeName = /\bdr\.?\b/i.test(cleanedDoc) || /^([A-Z][a-zA-Z'-]+\s+[A-Z][a-zA-Z'-]+)/.test(cleanedDoc);
-                            if (data.doctorName || looksLikeName) {
-                                document.getElementById('doctorName').value = cleanedDoc;
-                                const el = document.getElementById('doctorExtracted');
-                                el.innerHTML = 'Detected: <span class="extracted-text">' + cleanedDoc + '</span>';
-                                el.classList.remove('no-data');
-                                data.doctorName = cleanedDoc;
-                            }
-                        }
-                    }
+                    // Only auto-fill doctor if we have a confidently detected doctor name (not suggestions)
+                    // If no doctor name found via OCR, let user enter manually - no auto-fill from suggestions
 
                     // Auto-fill date if parsed or suggestion can be normalized
                     if (!document.getElementById('prescriptionDate').value) {
