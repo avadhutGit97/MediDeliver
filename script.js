@@ -316,11 +316,8 @@
                             showNoDataState();
                         }
                     } else {
-                        // Tesseract not available -> fallback to simulated extraction
-                        const extractedData = extractPrescriptionData(this);
-                        prescriptionData.extractedData = extractedData;
-                        prescriptionData.analysisSuccess = true;
-                        populateVerificationForm(extractedData);
+                        // Tesseract not available -> show no data state
+                        showNoDataState();
                     }
                 }
                 
@@ -406,53 +403,6 @@
                 const fs = (prescriptionData.image && prescriptionData.image.size) ? prescriptionData.image.size : 0;
                 return { hasContent: fs > 10000, highContrastRatio: 0, avgVariance: 0, fileSize: fs, width: img.width || 0, height: img.height || 0 };
             }
-        }
-
-        // Extract prescription data from valid image
-        function extractPrescriptionData(img) {
-            // Generate realistic data based on image characteristics
-            // This simulates different prescriptions for different uploads
-            
-            const prescriptions = [
-                {
-                    doctorName: 'Dr. Sarah Johnson',
-                    licenseNumber: 'MD78432',
-                    date: new Date().toISOString().split('T')[0],
-                    rxNumber: 'RX' + Math.floor(100000000 + Math.random() * 900000000),
-                    medicines: [
-                        { name: 'Amoxicillin', strength: '500mg', qty: '30', dosage: 'Take 1 capsule 3 times daily with food', confidence: 'high', price: '24.99' },
-                        { name: 'Ibuprofen', strength: '200mg', qty: '60', dosage: 'Take 1-2 tablets as needed for pain, max 6 per day', confidence: 'medium', price: '12.50' }
-                    ],
-                    confidence: 87
-                },
-                {
-                    doctorName: 'Dr. Michael Chen',
-                    licenseNumber: 'MD45219',
-                    date: new Date(Date.now() - 86400000).toISOString().split('T')[0],
-                    rxNumber: 'RX' + Math.floor(100000000 + Math.random() * 900000000),
-                    medicines: [
-                        { name: 'Lisinopril', strength: '10mg', qty: '90', dosage: 'Take 1 tablet daily in morning', confidence: 'high', price: '45.00' },
-                        { name: 'Metformin', strength: '500mg', qty: '60', dosage: 'Take 1 tablet twice daily with meals', confidence: 'high', price: '32.75' },
-                        { name: 'Atorvastatin', strength: '20mg', qty: '30', dosage: 'Take 1 tablet at bedtime', confidence: 'medium', price: '28.99' }
-                    ],
-                    confidence: 92
-                },
-                {
-                    doctorName: 'Dr. Sarah Johnson, MD',
-                    licenseNumber: 'MD78432',
-                    date: '2026-03-10',
-                    rxNumber: 'RX123456789',
-                    medicines: [
-                        { name: 'Amoxicillin', strength: '500mg', qty: '30', dosage: 'Take 1 capsule 3 times daily with food', confidence: 'high', price: '24.99' },
-                        { name: 'Ibuprofen', strength: '200mg', qty: '60', dosage: 'Take 1-2 tablets as needed for pain, max 6 per day', confidence: 'high', price: '12.50' }
-                    ],
-                    confidence: 95
-                }
-            ];
-            
-            // Pick based on image dimensions to simulate different prescriptions
-            const index = (img.width + img.height) % prescriptions.length;
-            return prescriptions[index];
         }
 
         // Parse raw OCR text into structured prescription-like data (best-effort)
@@ -852,12 +802,9 @@
             
             // Clear and populate medicines
             document.getElementById('medicinesList').innerHTML = '';
-            console.log('populateVerificationForm - medicines data:', data.medicines);
             
             if (data.medicines && data.medicines.length > 0) {
-                console.log('Processing', data.medicines.length, 'medicines');
                 data.medicines.forEach((med, index) => {
-                    console.log(`Processing medicine ${index + 1}:`, med);
                     addMedicineToList(med.name, med.strength || '', med.qty, med.dosage, med.confidence, med.price);
                 });
                 document.getElementById('detectedCount').textContent = data.medicines.length + ' detected';
@@ -886,8 +833,6 @@
         }
 
         function addMedicineToList(name, strength, qty, dosage, confidence = 'low', price = null) {
-            console.log('addMedicineToList called with:', { name, strength, qty, dosage, confidence, price });
-            
             const template = document.getElementById('medicineTemplate').content.cloneNode(true);
             const item = template.querySelector('.medicine-item');
             
@@ -901,7 +846,6 @@
                 if (strengthMatch) {
                     medicineName = strengthMatch[1].trim();
                     medicineStrength = strengthMatch[2].trim();
-                    console.log('Extracted strength from name:', { medicineName, medicineStrength });
                 }
             }
             
@@ -910,19 +854,11 @@
             template.querySelector('.medicine-qty').value = qty;
             template.querySelector('.medicine-dosage').value = dosage;
             
-            console.log('Setting values:', { 
-                name: medicineName, 
-                strength: medicineStrength, 
-                qty, 
-                dosage 
-            });
-            
             if (price) {
                 item.dataset.price = price;
             }
             
             document.getElementById('medicinesList').appendChild(template);
-            console.log('Medicine item added to list');
         }
 
         function addMedicine() {
